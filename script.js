@@ -9,3 +9,12 @@ const iconToOperator = {
   "fa-percent": "%",
 };
 
+let currentInput = "";
+let lastResult = "";
+let resetNext = false;
+
+function updateScreen() {
+  screen.value = currentInput || "0";
+}
+
+
