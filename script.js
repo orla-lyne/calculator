@@ -2,11 +2,14 @@ const screen = document.getElementById("screen");
 const buttons = document.querySelectorAll(".button");
 const iconToOperator = {
   "fa-divide": "÷",
-  "fa-xmark": "x",
+  "fa-xmark": "×",
   "fa-minus": "-",
   "fa-plus": "+",
   "fa-equals": "=",
   "fa-percent": "%",
+
+
+
 };
 
 let currentInput = "";
@@ -16,6 +19,9 @@ let resetNext = false;
 function updateScreen() {
   screen.value = currentInput || "0";
 }
+
+
+
 
 buttons.forEach((button) => {
   button.addEventListener("click", (e) => {
@@ -29,6 +35,7 @@ buttons.forEach((button) => {
         value = iconToOperator[icon.classList[1]];
       }
     }
+
     
     if (button.querySelector(".fa-delete-left")) {
       
@@ -106,4 +113,3 @@ buttons.forEach((button) => {
 });
 
 updateScreen();
-
