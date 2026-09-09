@@ -4,11 +4,10 @@ body {
 }
 .calculator {
   display: flex;
-
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 12rem;
+  gap: 3rem;
   background-color: black;
   color: white;
 }
@@ -18,7 +17,6 @@ body {
   color: white;
   justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
   padding: 20px;
   font-size: xx-large;
   font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
@@ -54,6 +52,6 @@ body {
   background-color: rgb(77, 76, 76);
 }
 
-myimageicon {
+.myimageicon {
   pointer-events: none;
 }
