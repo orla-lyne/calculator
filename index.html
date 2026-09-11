@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculator</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="calculator">
+    <input type="text" id="screen" readonly />
+
+    <div class="container">
+      <div class="group1">
+        <button class="button gray" id="ac-btn">AC</button>
+        <button class="button">7</button>
+        <button class="button">4</button>
+        <button class="button">1</button>
+        <button class="button">
+          <i class="fa-solid fa-delete-left myimageicon"></i>
+        </button>
+      </div>
+
+      <div class="group2">
+        <button class="button gray">
+          <i class="fa-solid fa-plus-minus myimageicon"></i>
+        </button>
+        <button class="button">8</button>
+        <button class="button">5</button>
+        <button class="button">2</button>
+        <button class="button">0</button>
+      </div>
+
+      <div class="group3">
+        <button class="button gray">
+          <i class="fa-solid fa-percent myimageicon"></i>
+        </button>
+        <button class="button">9</button>
+        <button class="button">6</button>
+        <button class="button">3</button>
+        <button class="button">.</button>
+      </div>
+
+      <div class="group4">
+        <button class="button orange">
+          <i class="fa-solid fa-divide myimageicon"></i>
+        </button>
+        <button class="button orange">
+          <i class="fa-solid fa-xmark myimageicon"></i>
+        </button>
+        <button class="button orange">
+          <i class="fa-solid fa-minus myimageicon"></i>
+        </button>
+        <button class="button orange">
+          <i class="fa-solid fa-plus myimageicon"></i>
+        </button>
+        <button class="button orange">
+          <i class="fa-solid fa-equals myimageicon"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
