@@ -1,130 +1,161 @@
-const screen = document.getElementById("screen");
-const buttons = document.querySelectorAll(".button");
+(function () {
+  const screen = document.getElementById("screen");
+  if (!screen) { console.error("No #screen element found!"); return; }
 
-const iconToOperator = {
-  "fa-divide": "÷",
-  "fa-xmark": "x",
-  "fa-minus": "-",
-  "fa-plus": "+",
-  "fa-equals": "=",
-};
+  const buttons = document.querySelectorAll(".button");
+  console.log("Attaching listeners to", buttons.length, "buttons");
 
-let currentInput = "";
-let lastResult = "";
-let resetNext = false;
+  let current = "";
+  let justEvaluated = false;
 
-function updateScreen() {
-  screen.value = currentInput || "0";
-}
+  const ops = {
+    "fa-divide": "÷",
+    "fa-xmark": "×",
+    "fa-minus": "-",
+    "fa-plus": "+",
+    "fa-equals": "=",
+  };
 
-buttons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const rawText = button.textContent.trim();
+  const OPERATORS = "+-×÷";
 
-    if (rawText.toUpperCase() === "AC") {
-      currentInput = "";
-      lastResult = "";
-      resetNext = false;
-      updateScreen();
-      return;
-    }
+  function render() {
+    screen.value = current === "" ? "0" : current;
+  }
 
-    let value = rawText;
+  buttons.forEach(function (btn) {
+    btn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
 
-    if (button.querySelector(".fa-delete-left")) {
-      if (resetNext) {
-        currentInput = "";
-        resetNext = false;
-      } else if (currentInput.length > 0) {
-        currentInput = currentInput.slice(0, -1);
-      }
-      updateScreen();
-      return;
-    }
+      const text = (btn.textContent || "").trim();
 
-    if (button.querySelector(".fa-plus-minus")) {
-      if (currentInput && currentInput !== "Error") {
-        if (currentInput.startsWith("-")) {
-          currentInput = currentInput.slice(1);
-        } else {
-          currentInput = "-" + currentInput;
-        }
-      }
-      updateScreen();
-      return;
-    }
-
-    if (button.querySelector(".fa-percent")) {
-      if (currentInput && currentInput !== "Error") {
-        const num = parseFloat(currentInput);
-        if (!isNaN(num)) currentInput = (num / 100).toString();
-      }
-      updateScreen();
-      return;
-    }
-    const icon = button.querySelector("i");
-    if (icon) {
-      const match = Array.from(icon.classList).find((c) => iconToOperator[c]);
-      if (match) value = iconToOperator[match];
-    }
-
-    if (!value || value.toUpperCase() === "AC") return;
-
-    if (value === "=") {
-      if (!currentInput || currentInput === "Error") {
-        updateScreen();
+      if (text.toUpperCase() === "AC") {
+        current = "";
+        justEvaluated = false;
+        render();
         return;
       }
-      try {
-        const expression = currentInput.replace(/÷/g, "/").replace(/x/g, "*");
-        if (/\/0(?!\d)/.test(expression)) {
-          currentInput = "Error";
-          resetNext = true;
-          updateScreen();
+
+      if (btn.querySelector(".fa-delete-left")) {
+        current = current.slice(0, -1);
+        render();
+        return;
+      }
+
+      if (btn.querySelector(".fa-plus-minus")) {
+        if (current && current !== "Error") {
+          current = current.startsWith("-") ? current.slice(1) : "-" + current;
+        }
+        render();
+        return;
+      }
+
+      if (btn.querySelector(".fa-percent")) {
+        const n = parseFloat(current);
+        if (!isNaN(n)) current = (n / 100).toString();
+        render();
+        return;
+      }
+
+      let val = text;
+      const icon = btn.querySelector("i");
+      if (icon) {
+        for (const cls of icon.classList) {
+          if (ops[cls]) { val = ops[cls]; break; }
+        }
+      }
+
+      if (!val || val.toUpperCase() === "AC") return;
+
+      if (val === "=") {
+        if (!current || current === "Error") { render(); return; }
+
+        let trimmed = current;
+        while (trimmed.length && OPERATORS.includes(trimmed[trimmed.length - 1])) {
+          trimmed = trimmed.slice(0, -1);
+        }
+        if (!trimmed) { current = ""; render(); return; }
+        try {
+          const expr = trimmed.replace(/÷/g, "/").replace(/×/g, "*");
+          if (/\/0(?!\d)/.test(expr)) {
+            current = "Error";
+          } else if (/^[\d+\-*/.() ]+$/.test(expr)) {
+            current = Function('"use strict";return (' + expr + ")")() + "";
+          } else {
+            current = "Error";
+          }
+        } catch (e) {
+          current = "Error";
+        }
+        justEvaluated = true;
+        render();
+        return;
+      }
+
+      if (OPERATORS.includes(val)) {
+        if (current === "" || current === "Error") {
+          if (val === "-") {
+            current = "-";
+            render();
+          }
           return;
         }
-        if (/^[\d+\-*/.() ]+$/.test(expression)) {
-          const result = Function('"use strict";return (' + expression + ")")();
-          currentInput = result.toString();
-          lastResult = currentInput;
-          resetNext = true;
-        } else {
-          currentInput = "Error";
+
+        if (justEvaluated) {
+          justEvaluated = false;
         }
-      } catch {
-        currentInput = "Error";
-      }
-      updateScreen();
-      return;
-    }
 
-    if (resetNext && "0123456789.".includes(value)) {
-      currentInput = "";
-      resetNext = false;
-    }
-    if (resetNext && "+-×÷".includes(value)) {
-      resetNext = false;
-    }
+        const lastChar = current[current.length - 1];
 
-    if (value === ".") {
-      const parts = currentInput.split(/[\+\-\x\÷]/);
-      const last = parts[parts.length - 1];
-      if (last.includes(".")) return;
-      if (last === "") {
-        currentInput += "0.";
-        updateScreen();
+        if (OPERATORS.includes(lastChar)) {
+          if (val === "-" && (lastChar === "×" || lastChar === "÷")) {
+            current += val;
+          } else {
+            current = current.slice(0, -1) + val;
+          }
+          render();
+          return;
+        }
+
+        if (lastChar === ".") {
+          current = current.slice(0, -1) + val;
+          render();
+          return;
+        }
+
+        current += val;
+        render();
         return;
       }
-    }
 
-    if (currentInput === "0" && "0123456789".includes(value)) {
-      currentInput = value;
-    } else {
-      currentInput += value;
-    }
+      if (justEvaluated && "0123456789.".includes(val)) {
+        current = "";
+        justEvaluated = false;
+      } else if (justEvaluated) {
+        justEvaluated = false;
+      }
 
-    updateScreen();
+      if (val === ".") {
+        const parts = current.split(/[\+\-\×\÷]/);
+        const last = parts[parts.length - 1];
+        if (last.includes(".")) return;
+        if (last === "") {
+          current += "0.";
+          render();
+          return;
+        }
+      }
+
+      if (current === "0" && "0123456789".includes(val)) {
+        current = val;
+      } else {
+        current += val;
+      }
+
+      render();
+    });
   });
-});
 
-updateScreen();
+  render();
+  console.log("Calculator ready.");
+})();
