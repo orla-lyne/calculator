@@ -1,34 +1,37 @@
 (function () {
   const screen = document.getElementById("screen");
-  if (!screen) { console.error("No #screen element found!"); return; }
+  if (!screen) return;
 
   const buttons = document.querySelectorAll(".button");
-  console.log("Attaching listeners to", buttons.length, "buttons");
-
   let current = "";
   let justEvaluated = false;
 
-  const ops = {
-    "fa-divide": "÷",
-    "fa-xmark": "×",
-    "fa-minus": "-",
-    "fa-plus": "+",
-    "fa-equals": "=",
-  };
-
-  const OPERATORS = "+-×÷";
+  const OPERATORS = ["+", "-", "×", "÷"];
 
   function render() {
     screen.value = current === "" ? "0" : current;
   }
 
-  buttons.forEach(function (btn) {
-    btn.addEventListener("click", function (ev) {
-      ev.preventDefault();
-      ev.stopPropagation();
+  function sanitizeLeadingZeros(expr) {
+    return expr.replace(/\b0+(\d+)/g, '\$1');
+  }
 
+  function calculate(expr) {
+    try {
+      const sanitized = sanitizeLeadingZeros(expr.replace(/÷/g, "/").replace(/×/g, "*"));
+      if (!/^[\d+\-*/.() ]+\$/.test(sanitized)) return "Error";
+      
+      const result = new Function(`"use strict"; return (${sanitized})`)();
+      return Number.isFinite(result) ? String(result) : "Error";
+    } catch {
+      return "Error";
+    }
+  }
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
       const text = (btn.textContent || "").trim();
-
+      
       if (text.toUpperCase() === "AC") {
         current = "";
         justEvaluated = false;
@@ -44,24 +47,42 @@
 
       if (btn.querySelector(".fa-plus-minus")) {
         if (current && current !== "Error") {
-          current = current.startsWith("-") ? current.slice(1) : "-" + current;
+          if (OPERATORS.some(op => current.includes(op))) {
+            let res = calculate(current);
+            current = res.startsWith("-") ? res.slice(1) : "-" + res;
+          } else {
+            current = current.startsWith("-") ? current.slice(1) : "-" + current;
+          }
         }
         render();
         return;
       }
 
       if (btn.querySelector(".fa-percent")) {
-        const n = parseFloat(current);
-        if (!isNaN(n)) current = (n / 100).toString();
+        if (current && current !== "Error") {
+          let trimmed = current;
+          while (trimmed.length && OPERATORS.includes(trimmed[trimmed.length - 1])) {
+            trimmed = trimmed.slice(0, -1);
+          }
+          if (trimmed) {
+            let res = calculate(trimmed);
+            if (res !== "Error") {
+              current = String(parseFloat(res) / 100);
+            } else {
+              current = "Error";
+            }
+          }
+        }
         render();
         return;
       }
 
       let val = text;
+      const opsMap = { "fa-divide": "÷", "fa-xmark": "×", "fa-minus": "-", "fa-plus": "+", "fa-equals": "=" };
       const icon = btn.querySelector("i");
       if (icon) {
         for (const cls of icon.classList) {
-          if (ops[cls]) { val = ops[cls]; break; }
+          if (opsMap[cls]) { val = opsMap[cls]; break; }
         }
       }
 
@@ -69,24 +90,12 @@
 
       if (val === "=") {
         if (!current || current === "Error") { render(); return; }
-
         let trimmed = current;
         while (trimmed.length && OPERATORS.includes(trimmed[trimmed.length - 1])) {
           trimmed = trimmed.slice(0, -1);
         }
         if (!trimmed) { current = ""; render(); return; }
-        try {
-          const expr = trimmed.replace(/÷/g, "/").replace(/×/g, "*");
-          if (/\/0(?!\d)/.test(expr)) {
-            current = "Error";
-          } else if (/^[\d+\-*/.() ]+$/.test(expr)) {
-            current = Function('"use strict";return (' + expr + ")")() + "";
-          } else {
-            current = "Error";
-          }
-        } catch (e) {
-          current = "Error";
-        }
+        current = calculate(trimmed);
         justEvaluated = true;
         render();
         return;
@@ -94,19 +103,12 @@
 
       if (OPERATORS.includes(val)) {
         if (current === "" || current === "Error") {
-          if (val === "-") {
-            current = "-";
-            render();
-          }
+          if (val === "-") { current = "-"; render(); }
           return;
         }
+        if (justEvaluated) justEvaluated = false;
 
-        if (justEvaluated) {
-          justEvaluated = false;
-        }
-
-        const lastChar = current[current.length - 1];
-
+        const lastChar = current.slice(-1);
         if (OPERATORS.includes(lastChar)) {
           if (val === "-" && (lastChar === "×" || lastChar === "÷")) {
             current += val;
@@ -116,13 +118,11 @@
           render();
           return;
         }
-
         if (lastChar === ".") {
           current = current.slice(0, -1) + val;
           render();
           return;
         }
-
         current += val;
         render();
         return;
@@ -137,9 +137,9 @@
 
       if (val === ".") {
         const parts = current.split(/[\+\-\×\÷]/);
-        const last = parts[parts.length - 1];
-        if (last.includes(".")) return;
-        if (last === "") {
+        const lastPart = parts[parts.length - 1];
+        if (lastPart.includes(".")) return;
+        if (current === "" || OPERATORS.includes(current.slice(-1))) {
           current += "0.";
           render();
           return;
@@ -151,11 +151,11 @@
       } else {
         current += val;
       }
-
       render();
     });
   });
 
   render();
-  console.log("Calculator ready.");
 })();
+
+
