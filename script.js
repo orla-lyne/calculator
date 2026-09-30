@@ -12,16 +12,27 @@
     screen.value = current === "" ? "0" : current;
   }
 
+  // Strips strict-mode illegal leading zeros from operands (e.g., "1+05" -> "1+5")
   function sanitizeLeadingZeros(expr) {
-    return expr.replace(/\b0+(\d+)/g, '\$1');
+    return expr.split(/([\+\-\×\÷])/).map(part => {
+      if (OPERATORS.includes(part) || part === "") return part;
+      if (/^0+\d/.test(part)) {
+        return part.replace(/^0+/, '');
+      }
+      return part;
+    }).join('');
   }
 
+  // Runs expression calculations safely
   function calculate(expr) {
     try {
-      const sanitized = sanitizeLeadingZeros(expr.replace(/÷/g, "/").replace(/×/g, "*"));
-      if (!/^[\d+\-*/.() ]+\$/.test(sanitized)) return "Error";
+      const sanitizedWithNoZeros = sanitizeLeadingZeros(expr);
+      const mathExpression = sanitizedWithNoZeros.replace(/÷/g, "/").replace(/×/g, "*");
       
-      const result = new Function(`"use strict"; return (${sanitized})`)();
+      // Fixed: Character whitelist check using the correct regex anchor structure
+      if (!/^[\d+\-*/.() ]+$/.test(mathExpression)) return "Error";
+      
+      const result = new Function('"use strict"; return (' + mathExpression + ')')();
       return Number.isFinite(result) ? String(result) : "Error";
     } catch {
       return "Error";
@@ -30,22 +41,41 @@
 
   buttons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      const text = (btn.textContent || "").trim();
+      let val = (btn.textContent || "").trim();
       
-      if (text.toUpperCase() === "AC") {
+      // Correctly extract the operation values mapped from FontAwesome icon classes
+      const opsMap = { 
+        "fa-divide": "÷", 
+        "fa-xmark": "×", 
+        "fa-minus": "-", 
+        "fa-plus": "+", 
+        "fa-equals": "=" 
+      };
+      
+      const icon = btn.querySelector("i");
+      if (icon) {
+        for (const cls of icon.classList) {
+          if (opsMap[cls]) { 
+            val = opsMap[cls]; 
+            break; 
+          }
+        }
+      }
+
+      if (val.toUpperCase() === "AC") {
         current = "";
         justEvaluated = false;
         render();
         return;
       }
 
-      if (btn.querySelector(".fa-delete-left")) {
+      if (icon && icon.classList.contains("fa-delete-left")) {
         current = current.slice(0, -1);
         render();
         return;
       }
 
-      if (btn.querySelector(".fa-plus-minus")) {
+      if (icon && icon.classList.contains("fa-plus-minus")) {
         if (current && current !== "Error") {
           if (OPERATORS.some(op => current.includes(op))) {
             let res = calculate(current);
@@ -58,7 +88,7 @@
         return;
       }
 
-      if (btn.querySelector(".fa-percent")) {
+      if (icon && icon.classList.contains("fa-percent")) {
         if (current && current !== "Error") {
           let trimmed = current;
           while (trimmed.length && OPERATORS.includes(trimmed[trimmed.length - 1])) {
@@ -77,16 +107,7 @@
         return;
       }
 
-      let val = text;
-      const opsMap = { "fa-divide": "÷", "fa-xmark": "×", "fa-minus": "-", "fa-plus": "+", "fa-equals": "=" };
-      const icon = btn.querySelector("i");
-      if (icon) {
-        for (const cls of icon.classList) {
-          if (opsMap[cls]) { val = opsMap[cls]; break; }
-        }
-      }
-
-      if (!val || val.toUpperCase() === "AC") return;
+      if (!val) return;
 
       if (val === "=") {
         if (!current || current === "Error") { render(); return; }
